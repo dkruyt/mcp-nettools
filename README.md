@@ -23,7 +23,7 @@ A Model Context Protocol implementation providing network diagnostics and scanni
 Install using uv:
 
 ```bash
-uv tool install mcp-nettools
+uv tool install https://github.com/dkruyt/mcp-nettools.git
 ```
 
 For development:
