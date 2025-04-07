@@ -5,7 +5,7 @@ from mcp.client.stdio import StdioServerParameters, stdio_client
 
 async def main():
     async with stdio_client(
-        StdioServerParameters(command="python", args=["nettools_mcp.py"])
+        StdioServerParameters(command="python", args=["-m", "mcp_nettools.cli"])
     ) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()

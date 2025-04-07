@@ -16,99 +16,196 @@ A Model Context Protocol implementation providing network diagnostics and scanni
 - **http_headers**: Analyze security headers of a website
 - **my_public_ip**: Check your own public IP address and get detailed information
 
-## Installation
+## 📦 Installation
 
-### Standard Installation
+### Installing Manually
 
-```bash
-# Create a virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows, use: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### Docker Installation
-
-You can also run the application using Docker:
+Install using uv:
 
 ```bash
-# Build and start the container
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop the container
-docker-compose down
+uv tool install mcp-nettools
 ```
 
-## Running the MCP Server
+For development:
+
+```bash
+# Clone and set up development environment
+git clone https://github.com/dkruyt/mcp-nettools.git
+cd mcp-nettools
+
+# Create and activate virtual environment
+uv venv
+source .venv/bin/activate
+
+# Install with test dependencies
+uv pip install -e ".[dev]"
+```
+
+## 🔌 MCP Integration
+
+Add this configuration to your MCP client config file:
+
+```json
+{
+    "mcpServers": {
+        "mcp-nettools": {
+            "command": "uv",
+            "args": [
+                "tool",
+                "run",
+                "mcp-nettools"
+            ]
+        }
+    }
+}
+```
+
+For Development:
+
+```json
+{
+    "mcpServers": {
+        "mcp-nettools": {
+            "command": "uv",
+            "args": [
+                "--directory",
+                "path/to/cloned/mcp-nettools",
+                "run",
+                "mcp-nettools"
+            ]
+        }
+    }
+}
+```
+
+## Running the Server
 
 ### Using stdio transport (default)
 
 ```bash
-python nettools_mcp.py
+# Using uv
+uv run mcp-nettools
+
+# Using Python directly
+python -m mcp_nettools.cli
 ```
 
 ### Using SSE transport
 
 ```bash
-python nettools_mcp.py --transport sse --port 8000
+# Using uv
+uv run mcp-nettools --transport sse --port 8000
+
+# Using Python directly
+python -m mcp_nettools.cli --transport sse --port 8000
 ```
 
-## Example Client Usage
+You should see output similar to:
+```
+INFO:     Started server process [28048]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
 
-Here's a basic client example using stdio transport:
+## 🔧 Usage Examples
+
+### Network Scanning
 
 ```python
-import asyncio
-from mcp.client.session import ClientSession
-from mcp.client.stdio import StdioServerParameters, stdio_client
+# Basic scan
+result = await session.call_tool("nmap_scan", {"host": "example.com"})
 
-async def main():
-    async with stdio_client(
-        StdioServerParameters(command="python", args=["nettools_mcp.py"])
-    ) as (read, write):
-        async with ClientSession(read, write) as session:
-            await session.initialize()
+# Port-specific scan
+result = await session.call_tool("nmap_scan", {
+    "host": "example.com",
+    "ports": "80,443,8080"
+})
 
-            # List available tools
-            tools = await session.list_tools()
-            print("Available tools:", tools)
-
-            # Run a DNS lookup
-            result = await session.call_tool("dns_lookup", {"domain": "example.com", "record_type": "A"})
-            print("DNS Lookup result:", result)
-
-            # Check if port 80 is open
-            result = await session.call_tool("port_check", {"host": "example.com", "port": 80})
-            print("Port check result:", result)
-
-asyncio.run(main())
+# Scan with specific arguments
+result = await session.call_tool("nmap_scan", {
+    "host": "example.com",
+    "arguments": "-sV -sS -T4"
+})
 ```
 
-## Setup with Claude
+### DNS Queries
 
-This MCP server is designed to be used with Claude or other AI assistants that support the Model Context Protocol.
+```python
+# Basic A record lookup
+result = await session.call_tool("dns_lookup", {
+    "domain": "example.com",
+    "record_type": "A"
+})
 
-## Docker Notes
+# MX record lookup
+result = await session.call_tool("dns_lookup", {
+    "domain": "example.com",
+    "record_type": "MX"
+})
 
-- The Docker setup includes all necessary system dependencies
-- Docker container runs with privileged mode to allow full network scanning capabilities
-- Using Docker is the recommended way to run the server, as it ensures all dependencies are properly installed
+# Comprehensive DNS enumeration
+result = await session.call_tool("dns_enum", {
+    "domain": "example.com",
+    "record_types": ["A", "AAAA", "MX", "TXT", "NS"]
+})
+```
 
-## Security Notes
+### Security Analysis
+
+```python
+# Check HTTP headers
+result = await session.call_tool("http_headers", {
+    "url": "https://example.com"
+})
+
+# SSL/TLS scan
+result = await session.call_tool("ssl_scan", {
+    "target": "example.com"
+})
+
+# Customized SSL scan
+result = await session.call_tool("ssl_scan", {
+    "target": "example.com",
+    "port": 443,
+    "check_vulnerabilities": True,
+    "check_certificate": True
+})
+```
+
+## ⚠️ Security Notes
 
 - Ensure you have proper authorization to scan networks and hosts
 - Some tools may require root/administrator privileges to function correctly
-- The nmap_scan and network_scan tools are wrappers around python-nmap, which itself requires the nmap executable to be installed
-- The Docker container runs in privileged mode, which gives it extensive access to the host system - only use in trusted environments
-- For production use, consider limiting the network capabilities in the docker-compose.yml file
+- The nmap_scan and network_scan tools require the nmap executable to be installed
+- For production use, consider limiting the network capabilities
 
-## Troubleshooting
+## 🛠️ Development
 
-- If network tools don't work in Docker, try uncommenting the `network_mode: "host"` line in docker-compose.yml
+### Running Tests
+
+```bash
+# Install development dependencies
+pip install ".[dev]"
+
+# Run tests
+pytest
+```
+
+### Building the Package
+
+```bash
+# Install build tools
+pip install build
+
+# Build the package
+python -m build
+```
+
+## ❓ Troubleshooting
+
 - Some network scanning features may be limited based on your network environment and permissions
-- For geolocation features, ensure your container has internet access
+- For geolocation features, ensure your system has internet access
+- If you encounter "Permission denied" errors with nmap or other tools, make sure you're running with appropriate privileges
+- SSL scanning can be slow; if you need only certificate information, set `check_vulnerabilities=False` in the options
+- If you encounter import errors, make sure all dependencies are installed
