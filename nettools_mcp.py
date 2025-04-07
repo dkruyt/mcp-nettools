@@ -7,18 +7,14 @@ import dns.resolver
 import whois
 import socket
 import subprocess
-import json
-import ssl
 import sslyze
 import re
 import ipaddress
 import requests
 import concurrent.futures
-import geoip2.database
-import os
 from urllib.parse import urlparse
 from sslyze.scanner.scanner import Scanner
-from sslyze.scanner.models import ServerScanRequest, ServerScanResult
+from sslyze.scanner.models import ServerScanRequest
 from sslyze.server_setting import ServerNetworkLocation
 from sslyze.plugins.scan_commands import ScanCommand
 from sslyze.errors import ConnectionToServerFailed
